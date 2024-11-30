@@ -1,26 +1,10 @@
-# noir-library-starter
+# Schnorr
 
-This repository is a template used by the noir-lang org when creating internally maintained libraries.
-
-This provides out of the box:
-
-- A simple CI setup to test and format the library
-- A canary flagging up compilation failures on nightly releases.
-- A [release-please](https://github.com/googleapis/release-please) setup to ease creating releases for the library.
-
-Feel free to use this template as a starting point to create your own Noir libraries.
-
----
-
-# LIBRARY_NAME
-
-Add a brief description of the library
+A Noir implementation for verification of Schnorr signatures.
 
 ## Noir version compatibility
 
-TODO: Update Noir version numbers tested compatible with
-
-This library is tested to work as of Noir version 1.0.0-beta.x.
+This library is tested to work as of Noir version 1.0.0-beta.0.
 
 ## Benchmarks
 
