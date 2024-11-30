@@ -149,3 +149,26 @@ mod test {
     }
 
 }
+
+mod bench {
+    use super::{assert_valid_signature, verify_signature};
+    use std::embedded_curve_ops::EmbeddedCurvePoint;
+
+    #[export]
+    pub fn bench_verify_signature(
+        public_key: EmbeddedCurvePoint,
+        signature: [u8; 64],
+        message: [u8; 32],
+    ) -> bool {
+        verify_signature(public_key, signature, message)
+    }
+
+    #[export]
+    pub fn bench_assert_valid_signature(
+        public_key: EmbeddedCurvePoint,
+        signature: [u8; 64],
+        message: [u8; 32],
+    ) {
+        assert_valid_signature(public_key, signature, message)
+    }
+}
