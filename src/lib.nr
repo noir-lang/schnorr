@@ -114,7 +114,6 @@ mod test {
     #[test]
     fn smoke_test() {
         let message: [u8; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let message_field: Field = 0x010203040506070809;
         let pub_key_x: Field = 0x04b260954662e97f00cab9adb773a259097f7a274b83b113532bce27fa3fb96a;
         let pub_key_y: Field = 0x2fd51571db6c08666b0edfbfbc57d432068bccd0110a39b166ab243da0037197;
         let signature: [u8; 64] = [
@@ -124,28 +123,10 @@ mod test {
             199, 19, 84, 239, 138, 124, 12,
         ];
 
-        // Regression for issue #2421
-        // We want to make sure that we can accurately verify a signature whose message is a slice vs. an array
-        let message_field_bytes: [u8; 10] = message_field.to_be_bytes();
-
-        // Is there ever a situation where someone would want
-        // to ensure that a signature was invalid?
-        // Check that passing a slice as the message is valid
-        let valid_signature = std::schnorr::verify_signature_slice(
-            pub_key_x,
-            pub_key_y,
-            signature,
-            message_field_bytes,
-        );
-        assert(valid_signature);
-        // Check that passing an array as the message is valid
-        let valid_signature =
-            std::schnorr::verify_signature(pub_key_x, pub_key_y, signature, message);
-        assert(valid_signature);
         let pub_key = EmbeddedCurvePoint { x: pub_key_x, y: pub_key_y, is_infinite: false };
-        let valid_signature = std::schnorr::verify_signature_noir(pub_key, signature, message);
+        let valid_signature = verify_signature(pub_key, signature, message);
         assert(valid_signature);
-        std::schnorr::assert_valid_signature(pub_key, signature, message);
+        super::assert_valid_signature(pub_key, signature, message);
     }
 
 }
