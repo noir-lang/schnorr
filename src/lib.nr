@@ -103,7 +103,7 @@ unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
     let mut r_lo = lo;
     let MODULUS = BN_P_m[1];
 
-    for i in 1..6 {
+    for _ in 1..6 {
         // check if rhi, rlo is larger than BN_P
         let borrow = r_lo.lt(MODULUS.0);
 
