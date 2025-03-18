@@ -213,7 +213,7 @@ mod test {
             64323764613183177041862057485226039389,
         );
         let normalized = normalize_signature(sig_e);
-        let expected = EmbeddedCurveScalar::new(23325341, 0); 
+        let expected = EmbeddedCurveScalar::new(23325341, 0);
         assert(normalized == expected);
     }
 
@@ -224,7 +224,7 @@ mod test {
             192971293839549531125586172455678118168,
         );
         let normalized = normalize_signature(sig_e);
-        let expected = EmbeddedCurveScalar::new(23325341, 0); 
+        let expected = EmbeddedCurveScalar::new(23325341, 0);
         assert(normalized == expected);
     }
 
