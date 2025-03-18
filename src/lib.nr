@@ -1,7 +1,6 @@
 use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 use std::hash::{blake2s, pedersen_hash};
 
-
 // the multiples of BN_P that are still less than 2^254 split into (lo, hi)
 global BN_P_m: [(Field, Field); 6] = [
     (0, 0),
