@@ -102,7 +102,7 @@ unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
     let mut q: Field = 0;
     let mut r_hi = hi;
     let mut r_lo = lo;
-    let MODULUS = BN_P_m[1]; 
+    let MODULUS = BN_P_m[1];
 
     for i in 1..6 {
         // check if rhi, rlo is larger than BN_P
@@ -115,7 +115,7 @@ unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
         let gt_flag = MODULUS.1.lt(r_hi);
         if gt_flag {
             q += 1;
-            r_hi = r_hi - MODULUS.1;   
+            r_hi = r_hi - MODULUS.1;
             r_lo = r_lo - MODULUS.0;
         }
     }
@@ -129,23 +129,23 @@ fn normalize_signature(sig_e: EmbeddedCurveScalar) -> EmbeddedCurveScalar {
     // get the quotient
     let q = unsafe { __get_quotient(hi, lo) };
     let MODULUSmq = (BN_P_m[q].0, BN_P_m[q].1);
-    let MODULUS = BN_P_m[1]; 
+    let MODULUS = BN_P_m[1];
     // remove MODULUS * q from lo/hi
     let borrow = unsafe { __gt(MODULUSmq.0, lo) };
     // rlo, rhi is the signature without the multiple of MODULUS
     let rlo = lo - MODULUSmq.0 + borrow as Field * TWO_POW_128;
-    let rhi = hi - borrow as Field - MODULUSmq.1; 
-    // now we validate that rlo and rhi are positive 
+    let rhi = hi - borrow as Field - MODULUSmq.1;
+    // now we validate that rlo and rhi are positive
     rlo.assert_max_bit_size::<128>();
-    rhi.assert_max_bit_size::<128>(); 
+    rhi.assert_max_bit_size::<128>();
     // validate that rlo, rhi is smaller than MODULUS
     // if the lo is larger than the modulus lo we have to get a borrow
-    let borrow = unsafe { __gt(MODULUS.0, rlo) };
+    let borrow = unsafe { __gt(rlo, MODULUS.0) };
     let rplo = MODULUS.0 - rlo + borrow as Field * TWO_POW_128;
     let rphi = MODULUS.1 - rhi - borrow as Field;
     // check that rplo and rphi are positive
     rplo.assert_max_bit_size::<128>();
-    rphi.assert_max_bit_size::<128>(); 
+    rphi.assert_max_bit_size::<128>();
     EmbeddedCurveScalar::new(rlo, rhi)
 }
 
