@@ -105,17 +105,25 @@ unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
 
     for i in 1..6 {
         // check if rhi, rlo is larger than BN_P
-        let borrow = unsafe { __gt(MODULUS.0, r_lo) };
+        let borrow = r_lo.lt(MODULUS.0);
+
         if borrow {
             r_lo = r_lo + TWO_POW_128;
             // rlo is always larger than BN_P lo now
             r_hi = r_hi - 1;
         }
-        let gt_flag = MODULUS.1.lt(r_hi);
+
+        let MODULUS_hi = MODULUS.1;
+
+        let gt_flag = !r_hi.lt(MODULUS_hi);
+
         if gt_flag {
-            q += 1;
             r_hi = r_hi - MODULUS.1;
             r_lo = r_lo - MODULUS.0;
+            if TWO_POW_128.lt(r_lo) | TWO_POW_128.lt(r_hi) {
+                break;
+            }
+            q += 1;
         }
     }
     q
@@ -163,9 +171,9 @@ fn scalar_from_bytes(bytes: [u8; 64], offset: u32) -> EmbeddedCurveScalar {
 }
 
 mod test {
-    use std::embedded_curve_ops::EmbeddedCurvePoint;
-
+    use super::normalize_signature;
     use super::verify_signature;
+    use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar};
 
     #[test]
     fn test_zero_signature() {
@@ -198,6 +206,15 @@ mod test {
         super::assert_valid_signature(pub_key, signature, message);
     }
 
+    #[test]
+    fn test_normalize_signature() {
+        let sig_e = EmbeddedCurveScalar::new(
+            201385395114098847380338600778112493540,
+            64323764613183177041862057485226039389,
+        );
+        let normalized = normalize_signature(sig_e);
+        println(f"normalized: {normalized}");
+    }
 }
 
 mod bench {
@@ -222,3 +239,4 @@ mod bench {
         assert_valid_signature(public_key, signature, message)
     }
 }
+
