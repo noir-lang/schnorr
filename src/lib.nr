@@ -1,6 +1,18 @@
 use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 use std::hash::{blake2s, pedersen_hash};
 
+// the multiples of BN_P that are still less than 2^254 split into (lo, hi)
+global BN_P_m: [(Field, Field); 6] = [
+    (0, 0),
+    (201385395114098847380338600778089168199, 64323764613183177041862057485226039389),
+    (62488423307259231297302594124410124942, 128647529226366354083724114970452078779),
+    (263873818421358078677641194902499293141, 192971293839549531125586172455678118168),
+    (124976846614518462594605188248820249884, 257295058452732708167448229940904157558),
+    (326362241728617309974943789026909418083, 321618823065915885209310287426130196947),
+];
+
+global TWO_POW_128: Field = 0x100000000000000000000000000000000;
+
 pub fn verify_signature<let N: u32>(
     public_key: EmbeddedCurvePoint,
     signature: [u8; 64],
@@ -62,7 +74,8 @@ fn calculate_signature_challenge<let N: u32>(
         y: 17631683881184975370165255887551781615748388533673675138860,
         is_infinite: false,
     };
-    let r = multi_scalar_mul([g1, public_key], [sig_s, sig_e]);
+    let reduced_sig_e = normalize_signature(sig_e);
+    let r = multi_scalar_mul([g1, public_key], [sig_s, reduced_sig_e]);
     // compare the _hashes_ rather than field elements modulo r
     let pedersen_hash = pedersen_hash([r.x, public_key.x, public_key.y]);
     let pde: [u8; 32] = pedersen_hash.to_be_bytes();
@@ -77,6 +90,70 @@ fn calculate_signature_challenge<let N: u32>(
 
     let result = blake2s(hash_input);
     (r.is_infinite, result)
+}
+
+unconstrained fn __gt(a: Field, b: Field) -> bool {
+    b.lt(a)
+}
+
+// gets the quotient of lo/hi when divided by BN254_Fq modulus
+unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
+    let mut q: Field = 0;
+    let mut r_hi = hi;
+    let mut r_lo = lo;
+    let MODULUS = BN_P_m[1];
+
+    for _ in 1..6 {
+        // check if rhi, rlo is larger than BN_P
+        let borrow = r_lo.lt(MODULUS.0);
+
+        if borrow {
+            r_lo = r_lo + TWO_POW_128;
+            // rlo is always larger than BN_P lo now
+            r_hi = r_hi - 1;
+        }
+
+        let MODULUS_hi = MODULUS.1;
+
+        let gt_flag = !r_hi.lt(MODULUS_hi);
+
+        if gt_flag {
+            r_hi = r_hi - MODULUS.1;
+            r_lo = r_lo - MODULUS.0;
+            if TWO_POW_128.lt(r_lo) | TWO_POW_128.lt(r_hi) {
+                break;
+            }
+            q += 1;
+        }
+    }
+    q
+}
+
+// this method reduces the signature to the range [0, BN254_Fq_MODULUS)
+fn normalize_signature(sig_e: EmbeddedCurveScalar) -> EmbeddedCurveScalar {
+    let mut hi = sig_e.hi;
+    let mut lo = sig_e.lo;
+    // get the quotient
+    let q = unsafe { __get_quotient(hi, lo) };
+    let MODULUSmq = (BN_P_m[q].0, BN_P_m[q].1);
+    let MODULUS = BN_P_m[1];
+    // remove MODULUS * q from lo/hi
+    let borrow = unsafe { __gt(MODULUSmq.0, lo) };
+    // rlo, rhi is the signature without the multiple of MODULUS
+    let rlo = lo - MODULUSmq.0 + borrow as Field * TWO_POW_128;
+    let rhi = hi - borrow as Field - MODULUSmq.1;
+    // now we validate that rlo and rhi are positive
+    rlo.assert_max_bit_size::<128>();
+    rhi.assert_max_bit_size::<128>();
+    // validate that rlo, rhi is smaller than MODULUS
+    // if the lo is larger than the modulus lo we have to get a borrow
+    let borrow = unsafe { __gt(rlo, MODULUS.0) };
+    let rplo = MODULUS.0 - rlo + borrow as Field * TWO_POW_128;
+    let rphi = MODULUS.1 - rhi - borrow as Field;
+    // check that rplo and rphi are positive
+    rplo.assert_max_bit_size::<128>();
+    rphi.assert_max_bit_size::<128>();
+    EmbeddedCurveScalar::new(rlo, rhi)
 }
 
 //Bytes to scalar: take the first (after the specified offset) 16 bytes of the input as the lo value, and the next 16 bytes as the hi value
@@ -94,9 +171,9 @@ fn scalar_from_bytes(bytes: [u8; 64], offset: u32) -> EmbeddedCurveScalar {
 }
 
 mod test {
-    use std::embedded_curve_ops::EmbeddedCurvePoint;
-
+    use super::normalize_signature;
     use super::verify_signature;
+    use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar};
 
     #[test]
     fn test_zero_signature() {
@@ -129,6 +206,28 @@ mod test {
         super::assert_valid_signature(pub_key, signature, message);
     }
 
+    #[test]
+    fn test_normalize_signature() {
+        let sig_e = EmbeddedCurveScalar::new(
+            201385395114098847380338600778112493540,
+            64323764613183177041862057485226039389,
+        );
+        let normalized = normalize_signature(sig_e);
+        let expected = EmbeddedCurveScalar::new(23325341, 0);
+        assert(normalized == expected);
+    }
+
+    #[test]
+    fn test_normalize_signature_2() {
+        let sig_e = EmbeddedCurveScalar::new(
+            263873818421358078677641194902522618482,
+            192971293839549531125586172455678118168,
+        );
+        let normalized = normalize_signature(sig_e);
+        let expected = EmbeddedCurveScalar::new(23325341, 0);
+        assert(normalized == expected);
+    }
+
 }
 
 mod bench {
@@ -153,3 +252,4 @@ mod bench {
         assert_valid_signature(public_key, signature, message)
     }
 }
+
