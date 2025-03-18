@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/noir-lang/schnorr/compare/v0.1.1...v0.1.2) (2025-03-18)
+
+
+### Bug Fixes
+
+* Add a normalization for the scalars mod BN254_Fq ([#8](https://github.com/noir-lang/schnorr/issues/8)) ([041495f](https://github.com/noir-lang/schnorr/commit/041495fefce1c101b190b2b08a43f7d56ddeb369))
+
 ## [0.1.1](https://github.com/noir-lang/schnorr/compare/v0.1.0...v0.1.1) (2024-12-03)
 
 
