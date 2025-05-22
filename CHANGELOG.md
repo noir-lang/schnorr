@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/noir-lang/schnorr/compare/v0.1.2...v0.1.3) (2025-05-22)
+
+
+### Bug Fixes
+
+* Always use u32 for indexing arrays ([#10](https://github.com/noir-lang/schnorr/issues/10)) ([6ac6c35](https://github.com/noir-lang/schnorr/commit/6ac6c35907b960a5d1c63a3bb3c92b097fad2d28))
+
 ## [0.1.2](https://github.com/noir-lang/schnorr/compare/v0.1.1...v0.1.2) (2025-03-18)
 
 
