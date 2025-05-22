@@ -97,8 +97,8 @@ unconstrained fn __gt(a: Field, b: Field) -> bool {
 }
 
 // gets the quotient of lo/hi when divided by BN254_Fq modulus
-unconstrained fn __get_quotient(hi: Field, lo: Field) -> Field {
-    let mut q: Field = 0;
+unconstrained fn __get_quotient(hi: Field, lo: Field) -> u32 {
+    let mut q: u32 = 0;
     let mut r_hi = hi;
     let mut r_lo = lo;
     let MODULUS = BN_P_m[1];
@@ -252,4 +252,3 @@ mod bench {
         assert_valid_signature(public_key, signature, message)
     }
 }
-
