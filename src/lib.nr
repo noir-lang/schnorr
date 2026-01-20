@@ -1,5 +1,5 @@
 use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
-use std::hash::{blake2s, pedersen_hash};
+use dep::poseidon::poseidon2::Poseidon2;
 
 // the multiples of BN_P that are still less than 2^254 split into (lo, hi)
 global BN_P_m: [(Field, Field); 6] = [
@@ -13,10 +13,10 @@ global BN_P_m: [(Field, Field); 6] = [
 
 global TWO_POW_128: Field = 0x100000000000000000000000000000000;
 
-pub fn verify_signature<let N: u32>(
+pub fn verify_signature(
     public_key: EmbeddedCurvePoint,
     signature: [u8; 64],
-    message: [u8; N],
+    message: Field,
 ) -> bool {
     //scalar lo/hi from bytes
     let sig_s = scalar_from_bytes(signature, 0);
@@ -39,10 +39,10 @@ pub fn verify_signature<let N: u32>(
     is_ok
 }
 
-pub fn assert_valid_signature<let N: u32>(
+pub fn assert_valid_signature(
     public_key: EmbeddedCurvePoint,
     signature: [u8; 64],
-    message: [u8; N],
+    message: Field,
 ) {
     //scalar lo/hi from bytes
     let sig_s = scalar_from_bytes(signature, 0);
@@ -55,7 +55,8 @@ pub fn assert_valid_signature<let N: u32>(
     assert((sig_s.lo != 0) | (sig_s.hi != 0));
     assert((sig_e.lo != 0) | (sig_e.hi != 0));
 
-    let (r_is_infinite, result) = calculate_signature_challenge(public_key, sig_s, sig_e, message);
+    let (r_is_infinite, result) =
+        calculate_signature_challenge(public_key, sig_s, sig_e, message);
 
     assert(!r_is_infinite);
     for i in 0..32 {
@@ -63,11 +64,11 @@ pub fn assert_valid_signature<let N: u32>(
     }
 }
 
-fn calculate_signature_challenge<let N: u32>(
+fn calculate_signature_challenge(
     public_key: EmbeddedCurvePoint,
     sig_s: EmbeddedCurveScalar,
     sig_e: EmbeddedCurveScalar,
-    message: [u8; N],
+    message: Field,
 ) -> (bool, [u8; 32]) {
     let g1 = EmbeddedCurvePoint {
         x: 1,
@@ -76,19 +77,8 @@ fn calculate_signature_challenge<let N: u32>(
     };
     let reduced_sig_e = normalize_signature(sig_e);
     let r = multi_scalar_mul([g1, public_key], [sig_s, reduced_sig_e]);
-    // compare the _hashes_ rather than field elements modulo r
-    let pedersen_hash = pedersen_hash([r.x, public_key.x, public_key.y]);
-    let pde: [u8; 32] = pedersen_hash.to_be_bytes();
-
-    let mut hash_input = [0; N + 32];
-    for i in 0..32 {
-        hash_input[i] = pde[i];
-    }
-    for i in 0..N {
-        hash_input[32 + i] = message[i];
-    }
-
-    let result = blake2s(hash_input);
+    let challenge = Poseidon2::hash::<4>([r.x, public_key.x, public_key.y, message], 4);
+    let result = challenge.to_be_bytes::<32>();
     (r.is_infinite, result)
 }
 
@@ -183,21 +173,22 @@ mod test {
             is_infinite: false,
         };
         let signature: [u8; 64] = [0; 64];
-        let message: [u8; _] = [2; 64]; // every message
+        let message: Field = 0;
         let verified = verify_signature(public_key, signature, message);
         assert(!verified);
     }
 
     #[test]
     fn smoke_test() {
-        let message: [u8; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let pub_key_x: Field = 0x04b260954662e97f00cab9adb773a259097f7a274b83b113532bce27fa3fb96a;
-        let pub_key_y: Field = 0x2fd51571db6c08666b0edfbfbc57d432068bccd0110a39b166ab243da0037197;
+        let message: Field =
+            0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f;
+        let pub_key_x: Field = 0x01;
+        let pub_key_y: Field = 0x2cf135e7506a45d632d270d45f1181294833fc48d823f272c;
         let signature: [u8; 64] = [
-            1, 13, 119, 112, 212, 39, 233, 41, 84, 235, 255, 93, 245, 172, 186, 83, 157, 253, 76,
-            77, 33, 128, 178, 15, 214, 67, 105, 107, 177, 234, 77, 48, 27, 237, 155, 84, 39, 84,
-            247, 27, 22, 8, 176, 230, 24, 115, 145, 220, 254, 122, 135, 179, 171, 4, 214, 202, 64,
-            199, 19, 84, 239, 138, 124, 12,
+            26, 111, 105, 9, 152, 132, 90, 54, 95, 179, 1, 32, 58, 106, 176, 38, 107, 163, 249,
+            157, 107, 44, 35, 99, 234, 252, 182, 248, 159, 175, 187, 117, 10, 201, 155, 137, 230,
+            71, 104, 61, 88, 66, 7, 175, 65, 89, 254, 151, 141, 247, 199, 59, 7, 143, 226, 152,
+            174, 101, 51, 70, 220, 212, 128, 29,
         ];
 
         let pub_key = EmbeddedCurvePoint { x: pub_key_x, y: pub_key_y, is_infinite: false };
@@ -238,7 +229,7 @@ mod bench {
     pub fn bench_verify_signature(
         public_key: EmbeddedCurvePoint,
         signature: [u8; 64],
-        message: [u8; 32],
+        message: Field,
     ) -> bool {
         verify_signature(public_key, signature, message)
     }
@@ -247,7 +238,7 @@ mod bench {
     pub fn bench_assert_valid_signature(
         public_key: EmbeddedCurvePoint,
         signature: [u8; 64],
-        message: [u8; 32],
+        message: Field,
     ) {
         assert_valid_signature(public_key, signature, message)
     }
