@@ -1,5 +1,5 @@
-use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 use dep::poseidon::poseidon2::Poseidon2;
+use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 
 // the multiples of BN_P that are still less than 2^254 split into (lo, hi)
 global BN_P_m: [(Field, Field); 6] = [
@@ -39,11 +39,7 @@ pub fn verify_signature(
     is_ok
 }
 
-pub fn assert_valid_signature(
-    public_key: EmbeddedCurvePoint,
-    signature: [u8; 64],
-    message: Field,
-) {
+pub fn assert_valid_signature(public_key: EmbeddedCurvePoint, signature: [u8; 64], message: Field) {
     //scalar lo/hi from bytes
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
@@ -55,8 +51,7 @@ pub fn assert_valid_signature(
     assert((sig_s.lo != 0) | (sig_s.hi != 0));
     assert((sig_e.lo != 0) | (sig_e.hi != 0));
 
-    let (r_is_infinite, result) =
-        calculate_signature_challenge(public_key, sig_s, sig_e, message);
+    let (r_is_infinite, result) = calculate_signature_challenge(public_key, sig_s, sig_e, message);
 
     assert(!r_is_infinite);
     for i in 0..32 {
@@ -180,15 +175,14 @@ mod test {
 
     #[test]
     fn smoke_test() {
-        let message: Field =
-            0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f;
+        let message: Field = 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f;
         let pub_key_x: Field = 0x01;
         let pub_key_y: Field = 0x2cf135e7506a45d632d270d45f1181294833fc48d823f272c;
         let signature: [u8; 64] = [
-            26, 111, 105, 9, 152, 132, 90, 54, 95, 179, 1, 32, 58, 106, 176, 38, 107, 163, 249,
-            157, 107, 44, 35, 99, 234, 252, 182, 248, 159, 175, 187, 117, 10, 201, 155, 137, 230,
-            71, 104, 61, 88, 66, 7, 175, 65, 89, 254, 151, 141, 247, 199, 59, 7, 143, 226, 152,
-            174, 101, 51, 70, 220, 212, 128, 29,
+            26, 111, 105, 9, 152, 132, 90, 54, 95, 179, 1, 32, 58, 106, 176, 38, 107, 163, 249, 157,
+            107, 44, 35, 99, 234, 252, 182, 248, 159, 175, 187, 117, 10, 201, 155, 137, 230, 71,
+            104, 61, 88, 66, 7, 175, 65, 89, 254, 151, 141, 247, 199, 59, 7, 143, 226, 152, 174,
+            101, 51, 70, 220, 212, 128, 29,
         ];
 
         let pub_key = EmbeddedCurvePoint { x: pub_key_x, y: pub_key_y, is_infinite: false };
