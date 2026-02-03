@@ -176,10 +176,7 @@ mod test {
 
         #[test]
         fn should_pass_for_max_valid_value() {
-            let sig_e = EmbeddedCurveScalar::new(
-                BN254_Fq_MODULUS.0 - 1,
-                BN254_Fq_MODULUS.1,
-            );
+            let sig_e = EmbeddedCurveScalar::new(BN254_Fq_MODULUS.0 - 1, BN254_Fq_MODULUS.1);
             assert_normalized_signature(sig_e);
         }
 
@@ -191,10 +188,7 @@ mod test {
 
         #[test(should_fail)]
         fn should_fail_when_greater_than_modulus() {
-            let sig_e = EmbeddedCurveScalar::new(
-                BN254_Fq_MODULUS.0 + 1,
-                BN254_Fq_MODULUS.1,
-            );
+            let sig_e = EmbeddedCurveScalar::new(BN254_Fq_MODULUS.0 + 1, BN254_Fq_MODULUS.1);
             assert_normalized_signature(sig_e);
         }
     }
