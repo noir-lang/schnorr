@@ -68,6 +68,7 @@ fn calculate_signature_challenge<let N: u32>(
         y: 17631683881184975370165255887551781615748388533673675138860,
         is_infinite: false,
     };
+    assert_normalized_signature(sig_s);
     assert_normalized_signature(sig_e);
     let r = multi_scalar_mul([g1, public_key], [sig_s, sig_e]);
     // compare the _hashes_ rather than field elements modulo r
