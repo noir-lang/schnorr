@@ -1,5 +1,5 @@
-use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 use poseidon::poseidon2::Poseidon2;
+use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_scalar_mul};
 
 global TWO_POW_128: Field = 0x100000000000000000000000000000000;
 
@@ -26,11 +26,7 @@ pub fn verify_signature(
     is_ok
 }
 
-pub fn assert_valid_signature(
-    public_key: EmbeddedCurvePoint,
-    signature: [u8; 64],
-    message: Field,
-) {
+pub fn assert_valid_signature(public_key: EmbeddedCurvePoint, signature: [u8; 64], message: Field) {
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
 
@@ -39,7 +35,8 @@ pub fn assert_valid_signature(
     assert((sig_s.lo != 0) | (sig_s.hi != 0));
     assert((sig_e.lo != 0) | (sig_e.hi != 0));
 
-    let (r_is_infinite, e_computed) = calculate_signature_challenge(public_key, sig_s, sig_e, message);
+    let (r_is_infinite, e_computed) =
+        calculate_signature_challenge(public_key, sig_s, sig_e, message);
 
     assert(!r_is_infinite);
     let sig_e_field = sig_e.lo + sig_e.hi * TWO_POW_128;
