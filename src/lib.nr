@@ -81,7 +81,7 @@ fn calculate_signature_challenge<let N: u32>(
     }
 
     let result = blake2s(hash_input);
-    (r.is_infinite_or_zero(), result)
+    (r.is_infinite(), result)
 }
 
 fn is_on_curve(point: EmbeddedCurvePoint) -> bool {
