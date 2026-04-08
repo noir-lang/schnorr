@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/noir-lang/schnorr/compare/v0.1.3...v0.2.0) (2026-04-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* update to new `EmbeddedCurvePoint` interface ([#16](https://github.com/noir-lang/schnorr/issues/16))
+
+### Miscellaneous Chores
+
+* Update to new `EmbeddedCurvePoint` interface ([#16](https://github.com/noir-lang/schnorr/issues/16)) ([975ba95](https://github.com/noir-lang/schnorr/commit/975ba95991a4c0b5c10ff054b4e0bc2544754722))
+
 ## [0.1.3](https://github.com/noir-lang/schnorr/compare/v0.1.2...v0.1.3) (2025-05-22)
 
 
