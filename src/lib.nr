@@ -21,10 +21,8 @@ pub fn verify_signature<let N: u32>(
     //scalar lo/hi from bytes
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
-    // pub_key is on Grumpkin curve
-    let mut is_ok = (public_key.y * public_key.y == public_key.x * public_key.x * public_key.x - 17)
-        & (!public_key.is_infinite);
 
+    let mut is_ok = is_on_curve(public_key);
     if ((sig_s.lo != 0) | (sig_s.hi != 0)) & ((sig_e.lo != 0) | (sig_e.hi != 0)) {
         let (r_is_infinite, result) =
             calculate_signature_challenge(public_key, sig_s, sig_e, message);
@@ -48,9 +46,7 @@ pub fn assert_valid_signature<let N: u32>(
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
 
-    // assert pub_key is on Grumpkin curve
-    assert(public_key.y * public_key.y == public_key.x * public_key.x * public_key.x - 17);
-    assert(public_key.is_infinite == false);
+    assert(is_on_curve(public_key));
     // assert signature is not null
     assert((sig_s.lo != 0) | (sig_s.hi != 0));
     assert((sig_e.lo != 0) | (sig_e.hi != 0));
@@ -69,11 +65,7 @@ fn calculate_signature_challenge<let N: u32>(
     sig_e: EmbeddedCurveScalar,
     message: [u8; N],
 ) -> (bool, [u8; 32]) {
-    let g1 = EmbeddedCurvePoint {
-        x: 1,
-        y: 17631683881184975370165255887551781615748388533673675138860,
-        is_infinite: false,
-    };
+    let g1 = EmbeddedCurvePoint::generator();
     let reduced_sig_e = normalize_signature(sig_e);
     let r = multi_scalar_mul([g1, public_key], [sig_s, reduced_sig_e]);
     // compare the _hashes_ rather than field elements modulo r
@@ -89,7 +81,11 @@ fn calculate_signature_challenge<let N: u32>(
     }
 
     let result = blake2s(hash_input);
-    (r.is_infinite, result)
+    (r.is_infinite(), result)
+}
+
+fn is_on_curve(point: EmbeddedCurvePoint) -> bool {
+    point.y * point.y == point.x * point.x * point.x - 17
 }
 
 unconstrained fn __gt(a: Field, b: Field) -> bool {
@@ -131,8 +127,8 @@ unconstrained fn __get_quotient(hi: Field, lo: Field) -> u32 {
 
 // this method reduces the signature to the range [0, BN254_Fq_MODULUS)
 fn normalize_signature(sig_e: EmbeddedCurveScalar) -> EmbeddedCurveScalar {
-    let mut hi = sig_e.hi;
-    let mut lo = sig_e.lo;
+    let hi = sig_e.hi;
+    let lo = sig_e.lo;
     // get the quotient
     let q = unsafe { __get_quotient(hi, lo) };
     let MODULUSmq = (BN_P_m[q].0, BN_P_m[q].1);
@@ -177,11 +173,7 @@ mod test {
 
     #[test]
     fn test_zero_signature() {
-        let public_key: EmbeddedCurvePoint = EmbeddedCurvePoint {
-            x: 1,
-            y: 17631683881184975370165255887551781615748388533673675138860,
-            is_infinite: false,
-        };
+        let public_key: EmbeddedCurvePoint = EmbeddedCurvePoint::generator();
         let signature: [u8; 64] = [0; 64];
         let message: [u8; _] = [2; 64]; // every message
         let verified = verify_signature(public_key, signature, message);
@@ -200,7 +192,7 @@ mod test {
             199, 19, 84, 239, 138, 124, 12,
         ];
 
-        let pub_key = EmbeddedCurvePoint { x: pub_key_x, y: pub_key_y, is_infinite: false };
+        let pub_key = EmbeddedCurvePoint { x: pub_key_x, y: pub_key_y };
         let valid_signature = verify_signature(pub_key, signature, message);
         assert(valid_signature);
         super::assert_valid_signature(pub_key, signature, message);
