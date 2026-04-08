@@ -22,7 +22,7 @@ jobs:
       - name: Install bb
         run: |
           curl -L https://bbup.aztec.network| bash
-          bbup -v 4.1.2
+          ~/.bb/bbup -nv 1.0.0-beta.19
           sudo apt install libc++-dev
 
       - name: Build Noir benchmark programs
