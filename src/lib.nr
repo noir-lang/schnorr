@@ -10,8 +10,7 @@ pub fn verify_signature(
 ) -> bool {
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
-    let mut is_ok = (public_key.y * public_key.y == public_key.x * public_key.x * public_key.x - 17)
-        & (!public_key.is_infinite);
+    let mut is_ok = is_on_curve(public_key) & (!public_key.is_infinite);
 
     if ((sig_s.lo != 0) | (sig_s.hi != 0)) & ((sig_e.lo != 0) | (sig_e.hi != 0)) {
         let (r_is_infinite, e_computed) =
@@ -30,7 +29,7 @@ pub fn assert_valid_signature(public_key: EmbeddedCurvePoint, signature: [u8; 64
     let sig_s = scalar_from_bytes(signature, 0);
     let sig_e = scalar_from_bytes(signature, 32);
 
-    assert(public_key.y * public_key.y == public_key.x * public_key.x * public_key.x - 17);
+    assert(is_on_curve(public_key));
     assert(public_key.is_infinite == false);
     assert((sig_s.lo != 0) | (sig_s.hi != 0));
     assert((sig_e.lo != 0) | (sig_e.hi != 0));
@@ -62,6 +61,10 @@ fn calculate_signature_challenge(
     let r = multi_scalar_mul([g1, public_key], [sig_s, sig_e]);
     let e = Poseidon2::hash([r.x, public_key.x, public_key.y, message], 4);
     (r.is_infinite, e)
+}
+
+fn is_on_curve(point: EmbeddedCurvePoint) -> bool {
+    point.y * point.y == point.x * point.x * point.x - 17
 }
 
 fn scalar_from_bytes(bytes: [u8; 64], offset: u32) -> EmbeddedCurveScalar {
