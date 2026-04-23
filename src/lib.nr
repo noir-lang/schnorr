@@ -11,7 +11,8 @@ pub fn verify_signature(
     let (sig_s, sig_e) = signature;
     let mut is_ok = is_on_curve(public_key);
 
-    if ((sig_s.lo != 0) | (sig_s.hi != 0)) & ((sig_e.lo != 0) | (sig_e.hi != 0)) {
+    let zero = EmbeddedCurveScalar::new(0, 0);
+    if ((sig_s != zero) & (sig_e != zero)) {
         let (r_is_infinite, e_computed) =
             calculate_signature_challenge(public_key, sig_s, sig_e, message);
 
@@ -32,8 +33,9 @@ pub fn assert_valid_signature(
     let (sig_s, sig_e) = signature;
 
     assert(is_on_curve(public_key));
-    assert((sig_s.lo != 0) | (sig_s.hi != 0));
-    assert((sig_e.lo != 0) | (sig_e.hi != 0));
+    let zero = EmbeddedCurveScalar::new(0, 0);
+    assert(sig_s != zero);
+    assert(sig_e != zero);
 
     let (r_is_infinite, e_computed) =
         calculate_signature_challenge(public_key, sig_s, sig_e, message);
