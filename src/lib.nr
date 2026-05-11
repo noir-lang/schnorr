@@ -71,13 +71,51 @@ mod test {
     use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar};
 
     #[test]
-    fn test_zero_signature() {
+    fn zero_signature() {
         let public_key: EmbeddedCurvePoint = EmbeddedCurvePoint::generator();
         let signature: (EmbeddedCurveScalar, EmbeddedCurveScalar) =
             (EmbeddedCurveScalar::new(0, 0), EmbeddedCurveScalar::new(0, 0));
         let message: Field = 0x1234;
         let verified = verify_signature(public_key, signature, message);
         assert(!verified);
+    }
+
+    // Pinned test vector mirroring the C++ `schnorr.pinned_test_vector_small` test.
+    #[test]
+    fn pinned_vector_small() {
+        let public_key = EmbeddedCurvePoint::new(
+            0x2c39bbbde2d0ffcb5c4317dcbfa1771cf554a2f33c647446632fa707a5bf5f3f,
+            0x2b9c81935298af5ebe22f1a7279bb76781e6cadba3fb6c5c41ed942392dc687c,
+        );
+        let sig_s = EmbeddedCurveScalar::new(
+            0x28a5278efa70b5bed7a1a00db7874926,
+            0x2e5369edb9c537abb7009429f27005e4,
+        );
+        let sig_e = EmbeddedCurveScalar::new(
+            0xf8885875459c1bfb37a446223a323f52,
+            0x0aa3af2d0820967a929db740196db453,
+        );
+        let message: Field = 0x2bc;
+        assert(verify_signature(public_key, (sig_s, sig_e), message));
+    }
+
+    // Pinned test vector mirroring the C++ `schnorr.pinned_test_vector_large` test.
+    #[test]
+    fn pinned_vector_large() {
+        let public_key = EmbeddedCurvePoint::new(
+            0x065812e335a97c2108ea8cf4ccfe2f9dd6b117a0714f5e18461575be93f61da6,
+            0x1a915003e8ec534f9a15d926a7ded478e178468ccc4f28e236e67450a55ac622,
+        );
+        let sig_s = EmbeddedCurveScalar::new(
+            0xdaf71612d4c3e50e9166fce768e6fa9a,
+            0x079b7d2ee637567708798f1fc5d1d9b9,
+        );
+        let sig_e = EmbeddedCurveScalar::new(
+            0x4aba6c0ac04353fb9fd87a6b03067106,
+            0x02371e738a5ae0234b416beb3903d9ab,
+        );
+        let message: Field = 0x0123456789abcdef0fedcba9876543210123456789abcdef0fedcba987654321;
+        assert(verify_signature(public_key, (sig_s, sig_e), message));
     }
 }
 
