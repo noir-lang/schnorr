@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/noir-lang/schnorr/compare/v0.2.0...v0.3.0) (2026-05-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* switch hash function to poseidon2 ([#17](https://github.com/noir-lang/schnorr/issues/17))
+
+### Features
+
+* Switch hash function to poseidon2 ([#17](https://github.com/noir-lang/schnorr/issues/17)) ([52e9f13](https://github.com/noir-lang/schnorr/commit/52e9f1325fabed0deb155f21df83d1fed2546452))
+
 ## [0.2.0](https://github.com/noir-lang/schnorr/compare/v0.1.3...v0.2.0) (2026-04-08)
 
 
