@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/noir-lang/schnorr/compare/v0.3.0...v0.4.0) (2026-05-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* bind challenge to a domain separation tag ([#21](https://github.com/noir-lang/schnorr/issues/21))
+
+### Features
+
+* Bind challenge to a domain separation tag ([#21](https://github.com/noir-lang/schnorr/issues/21)) ([3e24462](https://github.com/noir-lang/schnorr/commit/3e24462cab577c00ed01fd9d1244b5ab6bc3f5e2))
+
 ## [0.3.0](https://github.com/noir-lang/schnorr/compare/v0.2.0...v0.3.0) (2026-05-12)
 
 
