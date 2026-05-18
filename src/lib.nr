@@ -3,6 +3,20 @@ use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar, multi_sca
 
 global TWO_POW_128: Field = 0x100000000000000000000000000000000;
 
+/// Domain separation tag (DST) for the challenge hash of this Schnorr scheme.
+///
+/// Defined as `poseidon2_hash_bytes("schnorr_grumpkin_poseidon2")` where the byte-packing
+/// is: little-endian into 31-byte chunks, then Poseidon2 of the resulting field elements
+/// (length-1 input here since the source string fits in a single chunk). The derivation is
+/// pinned by `test::dst_matches_derivation`. Native signers consuming this library must
+/// mirror the same constant.
+///
+/// Including the DST as the first input to the challenge hash binds every signature to the
+/// "Schnorr over grumpkin with Poseidon2" scheme, preventing cross-protocol reinterpretation
+/// of an unrelated Poseidon2 output as a valid Schnorr challenge.
+pub global SCHNORR_CHALLENGE_DST: Field =
+    0x024c76938ed06b8ec1d9094b1013d190baa4011372f0604643bda812a63b832e;
+
 pub fn verify_signature(
     public_key: EmbeddedCurvePoint,
     signature: (EmbeddedCurveScalar, EmbeddedCurveScalar),
@@ -45,7 +59,7 @@ pub fn assert_valid_signature(
     assert(e_computed == sig_e_field);
 }
 
-/// e = Poseidon2(R.x, pubkey.x, pubkey.y, message)
+/// e = Poseidon2(SCHNORR_CHALLENGE_DST, R.x, pubkey.x, pubkey.y, message)
 ///
 /// Mirrors the native C++ implementation: the Poseidon2 sponge operates over the BN254 scalar
 /// field (= grumpkin base field = Noir's Field). Since Field modulus < grumpkin scalar modulus,
@@ -58,7 +72,10 @@ fn calculate_signature_challenge(
 ) -> (bool, Field) {
     let g1 = EmbeddedCurvePoint::generator();
     let r = multi_scalar_mul([g1, public_key], [sig_s, sig_e]);
-    let e = Poseidon2::hash([r.x, public_key.x, public_key.y, message], 4);
+    let e = Poseidon2::hash(
+        [SCHNORR_CHALLENGE_DST, r.x, public_key.x, public_key.y, message],
+        5,
+    );
     (r.is_infinite(), e)
 }
 
@@ -67,7 +84,8 @@ fn is_on_curve(point: EmbeddedCurvePoint) -> bool {
 }
 
 mod test {
-    use super::verify_signature;
+    use super::{SCHNORR_CHALLENGE_DST, verify_signature};
+    use poseidon::poseidon2::Poseidon2;
     use std::embedded_curve_ops::{EmbeddedCurvePoint, EmbeddedCurveScalar};
 
     #[test]
@@ -80,6 +98,23 @@ mod test {
         assert(!verified);
     }
 
+    // Recompute the DST from its source string and assert it matches the pinned constant.
+    // Native signers consuming this library must derive the same value; if either side
+    // drifts, signatures stop verifying across the native / in-circuit boundary.
+    #[test]
+    fn dst_matches_derivation() {
+        let src = "schnorr_grumpkin_poseidon2".as_bytes();
+        assert(src.len() <= 31);
+        let mut packed: Field = 0;
+        let mut mul: Field = 1;
+        for i in 0..src.len() {
+            packed += (src[i] as Field) * mul;
+            mul *= 256;
+        }
+        let derived = Poseidon2::hash([packed], 1);
+        assert_eq(derived, SCHNORR_CHALLENGE_DST);
+    }
+
     // Pinned test vector mirroring the C++ `schnorr.pinned_test_vector_small` test.
     #[test]
     fn pinned_vector_small() {
@@ -88,12 +123,12 @@ mod test {
             0x2b9c81935298af5ebe22f1a7279bb76781e6cadba3fb6c5c41ed942392dc687c,
         );
         let sig_s = EmbeddedCurveScalar::new(
-            0x28a5278efa70b5bed7a1a00db7874926,
-            0x2e5369edb9c537abb7009429f27005e4,
+            0x5fd1ac0ad411110674830c54cb506212,
+            0x281906862cdb4e0efec7226d757fe803,
         );
         let sig_e = EmbeddedCurveScalar::new(
-            0xf8885875459c1bfb37a446223a323f52,
-            0x0aa3af2d0820967a929db740196db453,
+            0x6c368959f958e525d761d06c47fd2ad6,
+            0x013f6a902c6c0efafdadbd4de409690d,
         );
         let message: Field = 0x2bc;
         assert(verify_signature(public_key, (sig_s, sig_e), message));
@@ -107,12 +142,12 @@ mod test {
             0x1a915003e8ec534f9a15d926a7ded478e178468ccc4f28e236e67450a55ac622,
         );
         let sig_s = EmbeddedCurveScalar::new(
-            0xdaf71612d4c3e50e9166fce768e6fa9a,
-            0x079b7d2ee637567708798f1fc5d1d9b9,
+            0xf3bc3b7147acb9c621fd9f72dbf15ffa,
+            0x08599f379f0301dfefdbd0272554454d,
         );
         let sig_e = EmbeddedCurveScalar::new(
-            0x4aba6c0ac04353fb9fd87a6b03067106,
-            0x02371e738a5ae0234b416beb3903d9ab,
+            0x97065383ebbbd76620398792bd259bc2,
+            0x2ceaee87f45b7a417f0ffb05451a8c92,
         );
         let message: Field = 0x0123456789abcdef0fedcba9876543210123456789abcdef0fedcba987654321;
         assert(verify_signature(public_key, (sig_s, sig_e), message));
